@@ -1,1 +1,3 @@
-(executable (name day01))
+(executable
+ (name day01)
+ (libraries str))

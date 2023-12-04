@@ -15,10 +15,34 @@ let first_last_num (str: string) : int =
   let b = last_num str in
   (a * 10) + b
 
+(* Part 2: tactic to only do second letter so we don't mess up 'overlap' ones *)
+let comp f g x = f (g x)
+let word_to_number (str: string) : string =
+  match str with
+  | "one" -> "o1e"
+  | "two" -> "t2o"
+  | "three" -> "t3ree"
+  | "four" -> "f4ur"
+  | "five" -> "f5ve"
+  | "six" -> "s6x"
+  | "seven" -> "s7ven"
+  | "eight" -> "e8ght"
+  | "nine" -> "n9ne"
+  | _ -> assert false
+let word_number_regex = Str.regexp "one\\|two\\|three\\|four\\|five\\|six\\|seven\\|eight\\|nine"
+let rec process_number_words (str: string) : string =
+  try
+    Str.search_forward word_number_regex str 0 |> ignore;
+    process_number_words @@ Str.substitute_first word_number_regex (comp word_to_number Str.matched_string) str
+  with Not_found -> str
+
 let () =
+  let part2mode = (Array.length Sys.argv) = 3 && Sys.argv.(2) = "2" in
   let filename = Sys.argv.(1) in
   let input = In_channel.with_open_bin filename In_channel.input_all |> String.trim in
-  String.split_on_char '\n' input
+  input
+  |> String.split_on_char '\n'
+  |> (if part2mode then List.map process_number_words else Fun.id)
   |> List.map first_last_num
   |> List.fold_left (+) 0
   |> Int.to_string
