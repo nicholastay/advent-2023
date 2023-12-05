@@ -39,27 +39,32 @@ let parse_schematic input =
 
 let num_digits (i: int) : int = (i |> Float.of_int |> Float.log10 |> Int.of_float) + 1
 
+let is_adjacent (p: part) (s: symbol) : bool =
+  let minc = p.c - (num_digits p.num) in
+  s.r >= p.r-1 
+  && s.r <= p.r+1
+  && s.c >= minc
+  && s.c <= p.c+1
+
 let find_non_adjacent_parts (parts,symbols) =
-  let has_adjacent (part: part) : bool =
-    let minc = part.c - (num_digits part.num) in
-    let is_adjacent s : bool =
-      ignore s.symbol;  (* get around unused warning, is there a better way? *)
-      s.r >= part.r-1 
-      && s.r <= part.r+1
-      && s.c >= minc
-      && s.c <= part.c+1
-    in
-    List.exists symbols ~f:is_adjacent
-  in
+  let has_adjacent (p: part) = List.exists ~f:(is_adjacent p) symbols in
   List.filter ~f:has_adjacent parts
+
+let find_gear_ratios (parts,symbols) =
+  let adjacent_parts (s: symbol) = List.filter ~f:(Fn.flip is_adjacent s) parts in
+  symbols
+    |> List.filter ~f:(fun s -> Char.equal s.symbol '*')
+    |> List.map ~f:adjacent_parts
+    |> List.filter ~f:(Fn.compose ((=) 2) List.length)
+    |> List.map ~f:(Fn.compose List.fold ~init:1 ~f:( * ) @@ List.map ~f:(fun p -> p.num))
 
 let () =
   let argv = Sys.get_argv () in
   let filename = argv.(1) in
+  let part2mode = (Array.length argv) >= 3 && String.equal argv.(2) "2" in
   let input = In_channel.with_open_bin filename In_channel.input_all |> String.strip in
   parse_schematic input
-  |> find_non_adjacent_parts
-  |> List.map ~f:(fun p -> p.num)
+  |> (if part2mode then find_gear_ratios else (Fn.compose List.map ~f:(fun p -> p.num)) find_non_adjacent_parts)
   |> List.fold ~init:0 ~f:(+)
   |> Stdlib.print_int |> Stdlib.print_newline
   (* |> List.iter ~f:(fun x -> Printf.sprintf "%d %d %d" x.num x.r x.c |> Stdlib.print_endline) *)
