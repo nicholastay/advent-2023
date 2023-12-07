@@ -23,12 +23,32 @@ let count_winning card =
   List.cartesian_product card.winning card.numbers
   |> List.count ~f:(fun (x,y) -> Int.equal x y)
 
+let part1 cards =
+  cards
+  |> List.map ~f:count_winning |> List.filter ~f:(Fn.non @@ Int.equal 0)
+  |> List.sum (module Int) ~f:(Fn.compose (Int.pow 2) @@ Fn.flip (-) 1)
+
+let repeat_list n lst =
+  let rec aux n out = if n = 0 then out else aux (n-1) (List.append out lst) in
+  aux (n-1) lst
+let part2 cards =
+  let rec aux i cs ex count =
+    match cs with
+    | [] -> count
+    | h :: t ->
+      let wc = count_winning h in
+      let dupes = List.count ~f:((=) i) ex in
+      let ex_new = repeat_list (dupes+1) @@ List.range (i+1) (i+1+wc) in
+      aux (i+1) t (List.append ex ex_new) (count+1+dupes)
+  in
+  aux 1 cards [] 0
+
 let () =
   let argv = Sys.get_argv () in
   let filename = argv.(1) in
+  let part2mode = (Array.length argv) >= 3 && String.equal argv.(2) "2" in
   let input = In_channel.with_open_bin filename In_channel.input_all |> String.strip in
   String.split_lines input
   |> List.map ~f:parse_card
-  |> List.map ~f:count_winning |> List.filter ~f:(Fn.non @@ Int.equal 0)
-  |> List.sum (module Int) ~f:(Fn.compose (Int.pow 2) @@ Fn.flip (-) 1)
+  |> (if part2mode then part2 else part1)
   |> Stdlib.print_int |> Stdlib.print_newline
