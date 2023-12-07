@@ -28,20 +28,21 @@ let part1 cards =
   |> List.map ~f:count_winning |> List.filter ~f:(Fn.non @@ Int.equal 0)
   |> List.sum (module Int) ~f:(Fn.compose (Int.pow 2) @@ Fn.flip (-) 1)
 
-let repeat_list n lst =
-  let rec aux n out = if n = 0 then out else aux (n-1) (List.append out lst) in
-  aux (n-1) lst
 let part2 cards =
-  let rec aux i cs ex count =
+  let n = List.length cards in
+  let dupes = Array.create ~len:n 0 in
+  let rec aux i cs count =
     match cs with
     | [] -> count
     | h :: t ->
       let wc = count_winning h in
-      let dupes = List.count ~f:((=) i) ex in
-      let ex_new = repeat_list (dupes+1) @@ List.range (i+1) (i+1+wc) in
-      aux (i+1) t (List.append ex ex_new) (count+1+dupes)
+      let d = dupes.(i) in
+      for j = i+1 to Int.min (i+wc) (n-1) do
+        dupes.(j) <- dupes.(j)+d+1
+      done;
+      aux (i+1) t (count+1+d)
   in
-  aux 1 cards [] 0
+  aux 0 cards 0
 
 let () =
   let argv = Sys.get_argv () in
