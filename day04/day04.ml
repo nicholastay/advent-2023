@@ -30,19 +30,16 @@ let part1 cards =
 
 let part2 cards =
   let n = List.length cards in
-  let dupes = Array.create ~len:n 0 in
-  let rec aux i cs count =
+  let rec aux i cs dupe count =
     match cs with
     | [] -> count
     | h :: t ->
       let wc = count_winning h in
-      let d = dupes.(i) in
-      for j = i+1 to Int.min (i+wc) (n-1) do
-        dupes.(j) <- dupes.(j)+d+1
-      done;
-      aux (i+1) t (count+1+d)
+      let d = List.hd_exn dupe in
+      let dupe = List.tl_exn dupe |> List.mapi ~f:(fun j x -> if j < wc then x+d+1 else x) in
+      aux (i+1) t dupe (count+1+d)
   in
-  aux 0 cards 0
+  aux 0 cards (List.init ~f:(Fn.const 0) n) 0
 
 let () =
   let argv = Sys.get_argv () in
